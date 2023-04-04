@@ -1,0 +1,95 @@
+#include <algorithm>
+#include <iomanip>
+#include <iostream>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+using namespace std;
+
+class AdjacencyList {
+private:
+  unordered_map<string, int> nodeIndex;
+  vector<vector<int>> adjList;
+  int ReturnNodeIndex(const string &node);
+
+public:
+  void AddEdge(const string &fromUrl, const string &toUrl);
+  void PageRank(int powerIters);
+};
+
+int AdjacencyList::ReturnNodeIndex(const string &node) {
+  auto it = nodeIndex.find(node);
+  if (it == nodeIndex.end()) {
+    int index = nodeIndex.size();
+    nodeIndex[node] = index;
+    adjList.resize(index + 1);
+    return index;
+  } else {
+    return it->second;
+  }
+}
+
+void AdjacencyList::AddEdge(const string &fromUrl, const string &toUrl) {
+  int from = ReturnNodeIndex(fromUrl);
+  int to = ReturnNodeIndex(toUrl);
+  adjList[from].push_back(to);
+}
+
+void AdjacencyList::PageRank(int powerIters) {
+  int size = nodeIndex.size();
+
+  // outdegree of each node
+  vector<int> outDegree(size, 0);
+  for (const auto &pair : nodeIndex) {
+    int i = pair.second;
+    outDegree[i] = adjList[i].size();
+  }
+
+  // compute list
+  vector<vector<float>> list(size, vector<float>(size, 0.0));
+  for (const auto &pair : nodeIndex) {
+    int i = pair.second;
+    for (int j : adjList[i]) {
+      list[j][i] = 1.0 / outDegree[i];
+    }
+  }
+
+  vector<float> pagerank(size, 1.0 / size);
+  // power iteration
+  for (int p = 0; p < powerIters; p++) {
+    vector<float> calcRank(size, 0.0);
+    for (int i = 0; i < size; i++) {
+      for (int j = 0; j < size; j++) {
+        calcRank[i] += list[i][j] * pagerank[j];
+      }
+    }
+    pagerank = calcRank;
+  }
+
+  // print in alphabetical order
+  vector<pair<string, float>> pageranks;
+  for (auto it = nodeIndex.begin(); it != nodeIndex.end(); ++it) {
+    pageranks.push_back(make_pair(it->first, pagerank[it->second]));
+  }
+  sort(pageranks.begin(), pageranks.end());
+  for (auto &a : pageranks) {
+    cout << a.first << " " << fixed << setprecision(2) << a.second << "\n";
+  }
+}
+
+int main() {
+  int numLines, powerIter;
+  string from, to;
+  cin >> numLines;
+  cin >> powerIter;
+  AdjacencyList adjList;
+  for (int i = 0; i < numLines; i++) {
+    // Get each input line
+    std::cin >> from;
+    std::cin >> to;
+    adjList.AddEdge(from, to);
+  }
+  // Create the graph object
+  adjList.PageRank(powerIter);
+}
